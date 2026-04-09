@@ -507,8 +507,29 @@ body {
 ───────────────────────────────────────────── */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: 1fr;
   gap: 20px;
+}
+
+/* Responsive: 2 columns on tablets */
+@media (min-width: 640px) {
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Responsive: 3 columns on medium screens */
+@media (min-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Responsive: 4 columns on wide screens */
+@media (min-width: 1280px) {
+  .products-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 .product-card {
   background: #fff;
@@ -552,8 +573,48 @@ body {
   font-family: "DM Mono", monospace;
   margin-bottom: 16px;
 }
-.product-btn {
+
+/* ─────────────────────────────────────────────
+   Product Actions Row (Quantity + Button)
+───────────────────────────────────────────── */
+.product-actions {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+/* ─────────────────────────────────────────────
+   Product Quantity Selector
+───────────────────────────────────────────── */
+.product-quantity {
+  flex: 1;
+  margin-bottom: 0;
+}
+.product-quantity label {
+  font-size: 12px;
+  color: #666;
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.quantity-input {
   width: 100%;
+  padding: 8px 10px;
+  border: 0.5px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: #111;
+  font-family: "DM Mono", monospace;
+  font-weight: 500;
+}
+.quantity-input:focus {
+  outline: none;
+  border-color: #1d9e75;
+  box-shadow: 0 0 0 2px rgba(29, 158, 117, 0.1);
+}
+
+.product-btn {
   padding: 11px 16px;
   background: #1a1a2e;
   color: #e8d5a3;
@@ -565,6 +626,7 @@ body {
   font-family: "DM Sans", sans-serif;
   letter-spacing: 0.3px;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 .product-btn:hover {
   opacity: 0.9;

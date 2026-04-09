@@ -6,19 +6,57 @@ import Banner from "./components/Banner";
 import Calculator from "./components/Calculator";
 import Benefits from "./components/Benefits";
 import Products from "./components/Products";
+import Cart from "./components/Cart";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("home");
+  const [cartItems, setCartItems] = useState([]);
 
   const handleNavigate = (page) => {
     setCurrentPage(page);
+  };
+
+  const handleAddToCart = (product) => {
+    setCartItems((prevItems) => {
+      const existingItem = prevItems.find((item) => item.id === product.id);
+      if (existingItem) {
+        return prevItems.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + product.quantity }
+            : item,
+        );
+      }
+      return [...prevItems, product];
+    });
+  };
+
+  const handleRemoveFromCart = (productId) => {
+    setCartItems((prevItems) =>
+      prevItems.filter((item) => item.id !== productId),
+    );
+  };
+
+  const handleUpdateCartQuantity = (productId, newQuantity) => {
+    if (newQuantity <= 0) {
+      handleRemoveFromCart(productId);
+    } else {
+      setCartItems((prevItems) =>
+        prevItems.map((item) =>
+          item.id === productId ? { ...item, quantity: newQuantity } : item,
+        ),
+      );
+    }
   };
 
   return (
     <>
       <div className="led-app">
         {/* Header - always visible */}
-        <Header currentPage={currentPage} onNavigate={handleNavigate} />
+        <Header
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+        />
 
         {/* Banner - only show on home page */}
         {currentPage === "home" && <Banner />}
@@ -46,7 +84,16 @@ export default function App() {
 
         {currentPage === "calculator" && <Calculator />}
         {currentPage === "benefits" && <Benefits />}
-        {currentPage === "products" && <Products />}
+        {currentPage === "products" && (
+          <Products onAddToCart={handleAddToCart} />
+        )}
+        {currentPage === "cart" && (
+          <Cart
+            cartItems={cartItems}
+            onRemoveFromCart={handleRemoveFromCart}
+            onUpdateQuantity={handleUpdateCartQuantity}
+          />
+        )}
       </div>
     </>
   );
