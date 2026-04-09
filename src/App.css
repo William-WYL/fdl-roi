@@ -1,0 +1,572 @@
+/* ─────────────────────────────────────────────
+   Global styles  (inject once at module level)
+───────────────────────────────────────────── */
+
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap");
+
+body {
+  font-family: "DM Sans", sans-serif;
+  background: #f4f5f7;
+  min-height: 100vh;
+}
+
+/* ── layout ── */
+.led-app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+.led-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+.led-topbar h1 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+.led-logo {
+  background: #1a1a2e;
+  color: #e8d5a3;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+}
+
+/* ── card ── */
+.led-card {
+  background: #fff;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+.led-card h2 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+/* ── mode buttons ── */
+.mode-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mode-btn {
+  flex: 1;
+  min-width: 180px;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
+  transition: all 0.15s;
+  text-align: left;
+  font-family: "DM Sans", sans-serif;
+}
+.mode-btn.active {
+  border-color: #3b6d11;
+  background: #eaf3de;
+  color: #27500a;
+  font-weight: 500;
+}
+
+/* ── lamp boxes ── */
+.lamp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.lamp-box {
+  background: #f8f8f8;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 14px;
+}
+.lamp-box.led-box {
+  border-color: #9fe1cb;
+  background: #f0faf6;
+}
+.lamp-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.inp-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.inp-group label {
+  font-size: 11px;
+  color: #999;
+  display: block;
+  margin-bottom: 3px;
+}
+.inp-group input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 0.5px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: #111;
+  font-family: "DM Mono", monospace;
+}
+.eff-tag {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 7px;
+  font-family: "DM Mono", monospace;
+}
+
+/* ── params grid ── */
+.params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.params-grid .inp-group label {
+  font-size: 12px;
+  color: #666;
+}
+.params-grid .inp-group input {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+/* ── buttons ── */
+.calc-btn {
+  background: #1a1a2e;
+  color: #e8d5a3;
+  border: none;
+  padding: 11px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: "DM Sans", sans-serif;
+  letter-spacing: 0.3px;
+  transition: opacity 0.15s;
+}
+.calc-btn:hover {
+  opacity: 0.85;
+}
+.pdf-btn {
+  background: #fff;
+  border: 1px solid #3b6d11;
+  color: #3b6d11;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: "DM Sans", sans-serif;
+  margin-left: 10px;
+  transition: all 0.15s;
+}
+.pdf-btn:hover {
+  background: #eaf3de;
+}
+.chart-toggle {
+  background: transparent;
+  border: 0.5px solid #ccc;
+  color: #555;
+  padding: 9px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-bottom: 14px;
+  font-family: "DM Sans", sans-serif;
+}
+.chart-toggle:hover {
+  background: #f4f5f7;
+}
+
+/* ── summary stat cards ── */
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: #f4f5f7;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.stat-card .s-label {
+  font-size: 11px;
+  color: #999;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.stat-card .s-val {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111;
+  font-family: "DM Mono", monospace;
+}
+
+/* ── lumen bar ── */
+.lumen-bar {
+  background: #f4f5f7;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+.lumen-bar .lb-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.bar-track {
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: #1d9e75;
+  transition: width 0.4s;
+}
+
+/* ── lamp result cards ── */
+.lamp-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.lr-card {
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 16px;
+  background: #fff;
+}
+.lr-name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.lr-name.inc {
+  color: #533ab7;
+}
+.lr-name.hal {
+  color: #0f6e56;
+}
+.lr-name.flu {
+  color: #993c1d;
+}
+.lr-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #666;
+  padding: 3px 0;
+  border-bottom: 0.5px solid #eee;
+}
+.lr-row:last-child {
+  border-bottom: none;
+}
+.lr-row .lr-v {
+  font-family: "DM Mono", monospace;
+  color: #111;
+  font-size: 12px;
+}
+.lr-big {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+.lr-big .savings {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d9e75;
+  font-family: "DM Mono", monospace;
+}
+.lr-big .payback {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 3px;
+}
+
+/* ── chart ── */
+.chart-wrap {
+  overflow-x: auto;
+  padding: 4px 0;
+}
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #666;
+}
+.range-row input {
+  flex: 1;
+}
+
+/* ── modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  max-width: 340px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+.modal-box h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 8px;
+}
+.modal-box p {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.modal-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.modal-btns button {
+  padding: 9px 18px;
+  border-radius: 7px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: "DM Sans", sans-serif;
+  font-weight: 500;
+}
+.modal-btns .mb-cancel {
+  background: transparent;
+  border: 0.5px solid #ccc;
+  color: #666;
+}
+.modal-btns .mb-save {
+  background: #1a1a2e;
+  color: #e8d5a3;
+  border: none;
+}
+.modal-btns .mb-nosave {
+  background: transparent;
+  border: 0.5px solid #ccc;
+  color: #111;
+}
+
+/* ─────────────────────────────────────────────
+   Header & Navigation Styles
+───────────────────────────────────────────── */
+.led-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 30px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+}
+.led-header-logo {
+  height: 50px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.led-header-logo:hover {
+  opacity: 0.85;
+}
+.led-header-nav {
+  display: flex;
+  gap: 32px;
+}
+.led-nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 400;
+  color: #666;
+  padding: 6px 0;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+  font-family: "DM Sans", sans-serif;
+  position: relative;
+}
+.led-nav-btn:hover {
+  color: #1a1a2e;
+}
+.led-nav-btn.active {
+  font-weight: 600;
+  color: #1a1a2e;
+}
+.led-nav-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #1a1a2e;
+  border-radius: 1px;
+}
+
+/* ─────────────────────────────────────────────
+   Page Content Styles
+───────────────────────────────────────────── */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 30px;
+}
+.page-header {
+  margin-bottom: 40px;
+}
+.page-header h1 {
+  font-size: 32px;
+  font-weight: 600;
+  color: #1a1a2e;
+  letter-spacing: -0.5px;
+  margin: 0 0 12px 0;
+}
+.page-header p {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* ─────────────────────────────────────────────
+   Benefits Page Styles
+───────────────────────────────────────────── */
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+.benefit-card {
+  background: #fff;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 28px;
+  transition: all 0.3s ease;
+}
+.benefit-card:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+.benefit-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.3px;
+}
+.benefit-card p {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────────
+   Products Page Styles
+───────────────────────────────────────────── */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+.product-card {
+  background: #fff;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+.product-card:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
+.product-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.2px;
+}
+.product-card-specs {
+  flex: 1;
+  margin-bottom: 16px;
+}
+.product-spec {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+.product-spec:last-child {
+  margin-bottom: 0;
+}
+.product-price {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d9e75;
+  font-family: "DM Mono", monospace;
+  margin-bottom: 16px;
+}
+.product-btn {
+  width: 100%;
+  padding: 11px 16px;
+  background: #1a1a2e;
+  color: #e8d5a3;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "DM Sans", sans-serif;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+}
+.product-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.01);
+}
