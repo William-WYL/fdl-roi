@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   ReferenceDot,
 } from "recharts";
+import { exportCalculatorPDF } from "../utils/exportPDF";
 
 /* ─────────────────────────────────────────────
    Constants
@@ -25,76 +26,6 @@ const TYPES = [
 const eff = (w, l) => (w > 0 ? l / w : 0);
 const fmt$ = (v) => `$${v.toFixed(2)}`;
 const fmtW = (w) => `${w.toFixed(1)} W`;
-
-/* ─────────────────────────────────────────────
-   PDF export  (opens a new tab → print dialog)
-───────────────────────────────────────────── */
-function exportPDF(results, mode) {
-  if (!results) return;
-  const r = results;
-
-  const rows = TYPES.map(({ k, label }) => {
-    const pb = r.paybacks.find((p) => p.t === k);
-    return `
-      <tr>
-        <td>${label}</td>
-        <td>${fmt$(r.savings[k])}</td>
-        <td style="color:${r.savings[k] * 5 - r.ledCostTotal >= 0 ? "#1D9E75" : "#D85A30"}">
-          ${fmt$(r.savings[k] * 5 - r.ledCostTotal)}
-        </td>
-        <td>${pb ? pb.time + " mo (" + (pb.time / 12).toFixed(1) + " yrs)" : "> 60 mo"}</td>
-      </tr>`;
-  }).join("");
-
-  const powerRows = `
-    <tr><td>Power / fixture</td>
-      <td>${fmtW(r.power.inc.per)}</td><td>${fmtW(r.power.hal.per)}</td>
-      <td>${fmtW(r.power.flu.per)}</td><td>${fmtW(r.power.led.per)}</td></tr>
-    <tr><td>Total power</td>
-      <td>${fmtW(r.power.inc.tot)}</td><td>${fmtW(r.power.hal.tot)}</td>
-      <td>${fmtW(r.power.flu.tot)}</td><td>${fmtW(r.power.led.tot)}</td></tr>
-    <tr><td>Efficacy</td>
-      <td>${r.power.inc.eff.toFixed(1)} lm/W</td><td>${r.power.hal.eff.toFixed(1)} lm/W</td>
-      <td>${r.power.flu.eff.toFixed(1)} lm/W</td><td>${r.power.led.eff.toFixed(1)} lm/W</td></tr>`;
-
-  const w = window.open("", "_blank");
-  w.document.write(`<!DOCTYPE html>
-<html><head><title>LED ROI Report</title>
-<style>
-  body{font-family:sans-serif;padding:32px;max-width:720px;margin:0 auto;color:#111}
-  h1{font-size:22px;margin-bottom:4px}
-  .sub{color:#666;margin-bottom:28px;font-size:13px}
-  .summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:28px}
-  .sc{background:#f4f5f7;border-radius:8px;padding:14px}
-  .sc .sl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px}
-  .sc .sv{font-size:20px;font-weight:600;margin-top:4px;font-family:monospace}
-  table{width:100%;border-collapse:collapse;margin-bottom:28px;font-size:13px}
-  th{background:#1a1a2e;color:#e8d5a3;padding:10px 14px;text-align:left}
-  td{padding:9px 14px;border-bottom:1px solid #eee}
-  .print-btn{background:#1a1a2e;color:#e8d5a3;border:none;padding:10px 22px;border-radius:7px;
-             font-size:13px;cursor:pointer;margin-bottom:24px}
-  @media print{.print-btn{display:none}}
-</style></head><body>
-<h1>LED ROI Calculator — Report</h1>
-<p class="sub">Generated ${new Date().toLocaleDateString()} &nbsp;·&nbsp; Mode: ${mode === "quantity" ? "By Quantity" : "By Total Lumens"}</p>
-<button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
-<div class="summary">
-  <div class="sc"><div class="sl">Total investment</div><div class="sv">${fmt$(r.ledCostTotal)}</div></div>
-  <div class="sc"><div class="sl">LED fixtures</div><div class="sv">${r.ledQty.toFixed(1)}</div></div>
-  <div class="sc"><div class="sl">LED efficacy</div><div class="sv">${r.power.led.eff.toFixed(1)} lm/W</div></div>
-</div>
-<table>
-  <thead><tr><th>Lamp type</th><th>Annual savings</th><th>5-yr net return</th><th>Payback period</th></tr></thead>
-  <tbody>${rows}</tbody>
-</table>
-<table>
-  <thead><tr><th>Parameter</th><th>Incandescent</th><th>Halogen</th><th>Fluorescent</th><th>LED</th></tr></thead>
-  <tbody>${powerRows}</tbody>
-</table>
-</body></html>`);
-  w.document.close();
-  setTimeout(() => w.print(), 400);
-}
 
 /* ─────────────────────────────────────────────
    Main component
@@ -137,7 +68,7 @@ export default function Calculator() {
   };
 
   const doSwitch = (save) => {
-    if (save) exportPDF(results, mode);
+    if (save) exportCalculatorPDF(results, mode);
     setMode(pendingMode);
     setPending(null);
     setShowModal(false);
@@ -472,7 +403,7 @@ export default function Calculator() {
           {hasResults && (
             <button
               className="pdf-btn"
-              onClick={() => exportPDF(results, mode)}
+              onClick={() => exportCalculatorPDF(results, mode)}
             >
               Export PDF
             </button>
