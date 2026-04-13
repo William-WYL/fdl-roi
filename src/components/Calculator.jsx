@@ -186,6 +186,9 @@ export default function Calculator() {
   ───────────────────────────────────────────── */
   return (
     <div className="led-app">
+      <div className="page-header">
+        <h1>LED Lighting ROI Calculator</h1>
+      </div>
       {/* ── mode card ── */}
       <div className="led-card">
         <h2>Calculation mode</h2>

@@ -1,130 +1,135 @@
 import { useState } from "react";
+import ProductCard from "./ProductCard";
+import ProductListView from "./ProductListView";
+import useProductStore from "../stores/productStore";
 
-export default function Products({ onAddToCart }) {
+export default function Products({ onAddToCart, onNavigate, onSelectProduct }) {
   const [quantities, setQuantities] = useState({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState("card"); // "card" or "list"
 
-  const products = [
-    {
-      id: 1,
-      name: "LED Bulb A19",
-      wattage: 9,
-      lumens: 800,
-      price: 8.99,
-      icon: "💡",
-    },
-    {
-      id: 2,
-      name: "LED Bulb PAR38",
-      wattage: 15,
-      lumens: 1500,
-      price: 12.99,
-      icon: "💡",
-    },
-    {
-      id: 3,
-      name: "LED Panel 2x2",
-      wattage: 32,
-      lumens: 3800,
-      price: 45.99,
-      icon: "📦",
-    },
-    {
-      id: 4,
-      name: "LED Tube T8",
-      wattage: 10,
-      lumens: 1200,
-      price: 6.99,
-      icon: "📏",
-    },
-    {
-      id: 5,
-      name: "LED Flood Light",
-      wattage: 50,
-      lumens: 5000,
-      price: 35.99,
-      icon: "🔆",
-    },
-    {
-      id: 6,
-      name: "LED Strip Light",
-      wattage: 7,
-      lumens: 300,
-      price: 4.99,
-      icon: "📡",
-    },
-  ];
+  // Store hooks
+  const products = useProductStore((state) => state.products);
+  const searchProducts = useProductStore((state) => state.searchProducts);
+  const getEffectivePrice = useProductStore((state) => state.getEffectivePrice);
 
+  // Derived state
+  const filteredProducts = searchQuery ? searchProducts(searchQuery) : products;
+  const hasResults = filteredProducts.length > 0;
+  const resultCount = filteredProducts.length;
+
+  // Handlers
   const handleQuantityChange = (id, value) => {
-    const num = parseInt(value) || 0;
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: Math.max(0, num),
-    }));
+    const num = Math.max(1, parseInt(value) || 1);
+    setQuantities((prev) => ({ ...prev, [id]: num }));
   };
 
   const handleAddToCart = (product) => {
     const qty = quantities[product.id] || 1;
     if (qty > 0) {
+      const effectivePrice = getEffectivePrice(product.id, qty);
       onAddToCart({
         id: product.id,
+        sku: product.sku,
         name: product.name,
-        wattage: product.wattage,
-        lumens: product.lumens,
-        price: product.price,
+        wattage: Math.min(...product.wattageOptions),
+        voltage: Math.min(...product.voltageOptions),
+        lumens: Math.min(...product.lumensOptions),
+        price: effectivePrice,
         quantity: qty,
       });
-      setQuantities((prev) => ({ ...prev, [product.id]: 0 }));
+      setQuantities((prev) => ({ ...prev, [product.id]: 1 }));
     }
   };
 
   return (
     <div className="page-container">
+      {/* Header */}
       <div className="page-header">
         <h1>LED Products</h1>
-        <p>Browse our selection of high-quality LED lighting solutions.</p>
       </div>
 
-      <div className="products-grid">
-        {products.map((product) => (
-          <div key={product.id} className="product-card">
-            <div style={{ fontSize: 28, marginBottom: 12 }}>{product.icon}</div>
-            <h3 className="product-card-name">{product.name}</h3>
+      {/* Search and View Toggle */}
+      <div className="products-toolbar">
+        <div className="search-container">
+          <input
+            type="text"
+            placeholder="Search by name or SKU#..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+        </div>
 
-            <div className="product-card-specs">
-              <div className="product-spec">
-                <span style={{ marginRight: 8 }}>⚡</span>
-                <span>
-                  {product.wattage}W &nbsp;·&nbsp; {product.lumens} lm
-                </span>
-              </div>
-            </div>
+        {/* View Toggle Buttons */}
+        <div className="view-toggle">
+          <button
+            className={`view-btn ${viewMode === "card" ? "active" : ""}`}
+            onClick={() => setViewMode("card")}
+            title="Card View"
+          >
+            <i className="fas fa-th"></i>
+          </button>
+          <button
+            className={`view-btn ${viewMode === "list" ? "active" : ""}`}
+            onClick={() => setViewMode("list")}
+            title="List View"
+          >
+            <i className="fas fa-list"></i>
+          </button>
+        </div>
+      </div>
 
-            <div className="product-price">${product.price.toFixed(2)}</div>
+      {/* Results Counter */}
+      {searchQuery && (
+        <div className="search-results-info">
+          Found {resultCount} product{resultCount !== 1 ? "s" : ""}
+        </div>
+      )}
 
-            <div className="product-actions">
-              <div className="product-quantity">
-                <label>Quantity:</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={quantities[product.id] || 0}
-                  onChange={(e) =>
-                    handleQuantityChange(product.id, e.target.value)
-                  }
-                  className="quantity-input"
-                />
-              </div>
-
-              <button
-                className="product-btn"
-                onClick={() => handleAddToCart(product)}
-              >
-                Add to Cart
-              </button>
-            </div>
+      {/* Products Grid or List or No Results */}
+      {hasResults ? (
+        viewMode === "card" ? (
+          <div className="products-grid">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                quantity={quantities[product.id]}
+                onQuantityChange={handleQuantityChange}
+                onAddToCart={handleAddToCart}
+                onProductClick={(productId) => {
+                  onSelectProduct(productId);
+                  onNavigate("product-detail");
+                }}
+              />
+            ))}
           </div>
-        ))}
-      </div>
+        ) : (
+          <div className="products-list">
+            {filteredProducts.map((product) => (
+              <ProductListView
+                key={product.id}
+                product={product}
+                quantity={quantities[product.id]}
+                onQuantityChange={handleQuantityChange}
+                onAddToCart={handleAddToCart}
+                onProductClick={(productId) => {
+                  onSelectProduct(productId);
+                  onNavigate("product-detail");
+                }}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        <div className="no-results">
+          <p>No products found matching "{searchQuery}"</p>
+          <p className="no-results-hint">
+            Try searching by name or SKU (e.g., 100001)
+          </p>
+        </div>
+      )}
     </div>
   );
 }

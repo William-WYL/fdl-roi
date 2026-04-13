@@ -2,15 +2,17 @@ import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import React, { useState } from "react";
 import Header from "./components/Header";
-import Banner from "./components/Banner";
+import Home from "./components/Home";
 import Calculator from "./components/Calculator";
 import Benefits from "./components/Benefits";
 import Products from "./components/Products";
+import ProductInfo from "./components/ProductInfo";
 import Cart from "./components/Cart";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("home");
   const [cartItems, setCartItems] = useState([]);
+  const [selectedProductId, setSelectedProductId] = useState(null);
 
   const handleNavigate = (page) => {
     setCurrentPage(page);
@@ -58,34 +60,24 @@ export default function App() {
           cartCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
         />
 
-        {/* Banner - only show on home page */}
-        {currentPage === "home" && <Banner />}
-
         {/* Page content */}
-        {currentPage === "home" && (
-          <div className="page-container" style={{ textAlign: "center" }}>
-            <div className="page-header">
-              <h1>Welcome to LED ROI Calculator</h1>
-              <p>
-                Calculate your return on investment when switching to LED
-                lighting. Use our calculator to see potential savings on energy
-                costs.
-              </p>
-            </div>
-            <button
-              onClick={() => handleNavigate("calculator")}
-              className="calc-btn"
-              style={{ marginTop: 20 }}
-            >
-              Start Calculator
-            </button>
-          </div>
-        )}
+        {currentPage === "home" && <Home onNavigate={handleNavigate} />}
 
         {currentPage === "calculator" && <Calculator />}
         {currentPage === "benefits" && <Benefits />}
         {currentPage === "products" && (
-          <Products onAddToCart={handleAddToCart} />
+          <Products
+            onAddToCart={handleAddToCart}
+            onNavigate={handleNavigate}
+            onSelectProduct={setSelectedProductId}
+          />
+        )}
+        {currentPage === "product-detail" && selectedProductId && (
+          <ProductInfo
+            productId={selectedProductId}
+            onAddToCart={handleAddToCart}
+            onNavigate={handleNavigate}
+          />
         )}
         {currentPage === "cart" && (
           <Cart

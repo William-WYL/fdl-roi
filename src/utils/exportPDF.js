@@ -57,7 +57,7 @@ export function exportCartPDF(cartItems, results, oldLamp, common) {
   const oldLampRows = LAMP_TYPES.map(({ k, label }) => {
     const ol =
       oldLamp[{ inc: "incandescent", hal: "halogen", flu: "fluorescent" }[k]];
-    const oldEff = ol.watts > 0 ? (ol.lumens / ol.watts).toFixed(1) : 0;
+    const oldEff = eff(ol.watts, ol.lumens).toFixed(1);
     return `<tr>
       <td>${label}</td>
       <td>${ol.watts}W</td>
@@ -87,7 +87,7 @@ export function exportCartPDF(cartItems, results, oldLamp, common) {
           oldLamp[
             { inc: "incandescent", hal: "halogen", flu: "fluorescent" }[k]
           ];
-        const oldEff = ol.watts > 0 ? ol.lumens / ol.watts : 0;
+        const oldEff = eff(ol.watts, ol.lumens);
         const oldWatts = totalLedLumens / oldEff;
         const oldEnergy = (oldWatts * common.hours * common.days) / 1000;
         const newEnergy = (totalLedWatts * common.hours * common.days) / 1000;
@@ -170,7 +170,7 @@ export function exportCartPDF(cartItems, results, oldLamp, common) {
 <div class="summary">
   <div class="sc"><div class="sl">Usage Hours/Day</div><div class="sv">${common.hours} hrs</div></div>
   <div class="sc"><div class="sl">Operating Days/Year</div><div class="sv">${common.days} days</div></div>
-  <div class="sc"><div class="sl">Electricity Rate</div><div class="sv">\$${common.rate.toFixed(2)}/kWh</div></div>
+  <div class="sc"><div class="sl">Electricity Rate</div><div class="sv">$${common.rate.toFixed(2)}/kWh</div></div>
 </div>
 
 <h2>5. Old Lighting Specifications (Per Fixture)</h2>
@@ -197,8 +197,34 @@ ${detailedCalcs}
   <thead><tr><th>Lamp Type</th><th>Annual Savings</th><th>5-Year Net Return</th><th>Payback Period</th></tr></thead>
   <tbody>${typeRows}</tbody>
 </table>
+
+<h2>9. Important Notes & Disclaimers</h2>
+<div style="padding:14px;margin:14px 0;font-size:13px;">
+  <p style="margin:0 0 10px 0;font-weight:600">Calculation Methodology:</p>
+  <p style="margin:0 0 10px 0">For products with multiple wattage, voltage, or lumens options, this report uses the <strong>lowest value</strong> from each product's available options to provide conservative (best-case) savings estimates.</p>
+  
+  <p style="margin:10px 0 10px 0;font-weight:600">Estimation Disclaimer:</p>
+  <p style="margin:0">This is a rough estimation for informational purposes. The actual real-world savings depend on various factors including but not limited to:
+  <ul style="margin:8px 0 0 0;padding-left:20px">
+    <li>Actual installation and usage patterns</li>
+    <li>Local electricity rates and seasonal variations</li>
+    <li>Fixture efficiency and aging over time</li>
+    <li>Operating hours and environmental conditions</li>
+    <li>Maintenance and lamp replacement cycles</li>
+    <li>Regional energy code requirements</li>
+  </ul>
+  Please consult with energy professionals for accurate project-specific calculations.</p>
+</div>
 `
-    : "<h2>6. ROI Analysis</h2><p style='color:#999;font-size:13px'>No ROI analysis yet. Run 'Calculate Savings' in cart to see projected savings and payback periods.</p>"
+    : `
+<h2>6. Important Notes & Disclaimers</h2>
+<div style="padding:14px;margin:14px 0;font-size:13px;">
+  <p style="margin:0 0 10px 0;font-weight:600">Calculation Methodology:</p>
+  <p style="margin:0 0 10px 0">For products with multiple wattage, voltage, or lumens options, calculations use the <strong>lowest value</strong> to provide conservative (best-case) savings estimates.</p>
+  
+  <p style="margin:10px 0 10px 0;font-weight:600">Estimation Disclaimer:</p>
+  <p style="margin:0">This is a rough estimation for informational purposes. No ROI analysis has been calculated yet. Run 'Calculate Savings' in the cart to see projected savings and payback periods. Actual real-world savings depend on various factors including local electricity rates, installation patterns, equipment efficiency, and regional energy codes.</p>
+</div>`
 }
 
 </body></html>`);

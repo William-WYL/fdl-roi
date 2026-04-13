@@ -10,6 +10,7 @@ import {
   ReferenceDot,
 } from "recharts";
 import { exportCartPDF } from "../utils/exportPDF";
+import useProductStore from "../stores/productStore";
 
 /* ─────────────────────────────────────────────
    Constants
@@ -35,6 +36,7 @@ export default function Cart({
   const [showChart, setShowChart] = useState(false);
   const [timeRange, setTimeRange] = useState(60);
   const [results, setResults] = useState(null);
+  const getEffectivePrice = useProductStore((state) => state.getEffectivePrice);
 
   const [common, setCommon] = useState({
     hours: 24,
@@ -63,15 +65,22 @@ export default function Cart({
 
   const ledData = calculateLEDData();
 
+  // Calculate cart total with effective pricing
+  const calculateCartTotal = () => {
+    return cartItems.reduce((sum, item) => {
+      const effectivePrice = getEffectivePrice(item.id, item.quantity);
+      return sum + effectivePrice * item.quantity;
+    }, 0);
+  };
+
+  const cartTotal = calculateCartTotal();
+
   const calculate = () => {
     if (cartItems.length === 0) return;
 
     const ledEff = eff(ledData.totalWatts, ledData.totalLumens);
     const ledQty = cartItems.length;
-    const cartTotal = cartItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0,
-    );
+    const currentCartTotal = calculateCartTotal();
 
     const typeMap = { inc: "incandescent", hal: "halogen", flu: "fluorescent" };
 
@@ -97,7 +106,7 @@ export default function Cart({
     for (let m = 0; m <= 60; m++) {
       const row = { time: m };
       ["inc", "hal", "flu"].forEach((t) => {
-        row[t] = (m / 12) * savings[t] - cartTotal;
+        row[t] = (m / 12) * savings[t] - currentCartTotal;
       });
       chart.push(row);
       if (m > 0) {
@@ -139,11 +148,6 @@ export default function Cart({
     ? results.chart.filter((d) => d.time <= timeRange)
     : [];
 
-  const cartTotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-
   return (
     <div className="page-container">
       <div className="page-header">
@@ -167,10 +171,16 @@ export default function Cart({
               <thead>
                 <tr style={{ borderBottom: "2px solid #eee" }}>
                   <th style={{ textAlign: "left", padding: 12 }}>Product</th>
+                  <th style={{ textAlign: "center", padding: 12 }}>SKU</th>
                   <th style={{ textAlign: "center", padding: 12 }}>Watts</th>
                   <th style={{ textAlign: "center", padding: 12 }}>Lumens</th>
                   <th style={{ textAlign: "center", padding: 12 }}>Qty</th>
-                  <th style={{ textAlign: "right", padding: 12 }}>Price</th>
+                  <th style={{ textAlign: "center", padding: 12 }}>
+                    Unit Price
+                  </th>
+                  <th style={{ textAlign: "right", padding: 12 }}>
+                    Total Price
+                  </th>
                   <th style={{ textAlign: "center", padding: 12 }}>Action</th>
                 </tr>
               </thead>
@@ -178,6 +188,16 @@ export default function Cart({
                 {cartItems.map((item) => (
                   <tr key={item.id} style={{ borderBottom: "1px solid #eee" }}>
                     <td style={{ padding: 12 }}>{item.name}</td>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        padding: 12,
+                        fontSize: 13,
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {item.sku}
+                    </td>
                     <td
                       style={{ textAlign: "center", padding: 12, fontSize: 13 }}
                     >
@@ -212,12 +232,26 @@ export default function Cart({
                     </td>
                     <td
                       style={{
+                        textAlign: "center",
+                        padding: 12,
+                        fontWeight: 500,
+                        color: "#1d9e75",
+                        fontFamily: "DM Mono, monospace",
+                      }}
+                    >
+                      {fmt$(getEffectivePrice(item.id, item.quantity))}
+                    </td>
+                    <td
+                      style={{
                         textAlign: "right",
                         padding: 12,
                         fontWeight: 600,
                       }}
                     >
-                      {fmt$(item.price * item.quantity)}
+                      {fmt$(
+                        getEffectivePrice(item.id, item.quantity) *
+                          item.quantity,
+                      )}
                     </td>
                     <td style={{ textAlign: "center", padding: 12 }}>
                       <button
@@ -257,7 +291,7 @@ export default function Cart({
                 alignItems: "center",
               }}
             >
-              <div style={{ fontSize: 18, fontWeight: 600 }}>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>
                 Cart Total:{" "}
                 <span style={{ color: "#1d9e75" }}>{fmt$(cartTotal)}</span>
               </div>
@@ -392,7 +426,10 @@ export default function Cart({
                 }}
               >
                 * Calculation based on equivalent total lumens (same light
-                output comparison)
+                output comparison) and the lowest values from each product's
+                available options. For products with multiple wattage, voltage,
+                or lumens options, we use the minimum value to provide
+                conservative (best-case) savings estimates.
               </div>
               {/* summary stat cards */}
               <div className="summary-row">

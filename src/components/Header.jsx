@@ -18,16 +18,16 @@ export default function Header({ currentPage, onNavigate, cartCount = 0 }) {
           Calculator
         </button>
         <button
-          onClick={() => onNavigate("benefits")}
-          className={`led-nav-btn ${currentPage === "benefits" ? "active" : ""}`}
-        >
-          Benefits
-        </button>
-        <button
           onClick={() => onNavigate("products")}
           className={`led-nav-btn ${currentPage === "products" ? "active" : ""}`}
         >
           Products
+        </button>
+        <button
+          onClick={() => onNavigate("benefits")}
+          className={`led-nav-btn ${currentPage === "benefits" ? "active" : ""}`}
+        >
+          Benefits
         </button>
         <button
           onClick={() => onNavigate("cart")}
