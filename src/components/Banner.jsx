@@ -12,9 +12,6 @@ export default function Banner() {
         justifyContent: "center",
         alignItems: "center",
       }}
-    >
-      <h1>LED ROI Calculator</h1>
-      <p>Calculate your energy savings instantly</p>
-    </div>
+    ></div>
   );
 }

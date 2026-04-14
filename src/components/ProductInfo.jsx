@@ -7,8 +7,12 @@ export default function ProductInfo({ productId, onAddToCart, onNavigate }) {
   const [quantity, setQuantity] = useState(1);
   const [imageIndex, setImageIndex] = useState(0);
   const [showSpecs, setShowSpecs] = useState(false);
+
+  // All hooks must be called at the top, unconditionally
   const getProductById = useProductStore((state) => state.getProductById);
   const getEffectivePrice = useProductStore((state) => state.getEffectivePrice);
+  const getFormattedSize = useProductStore((state) => state.getFormattedSize);
+
   const product = getProductById(productId);
 
   if (!product) {
@@ -196,7 +200,7 @@ export default function ProductInfo({ productId, onAddToCart, onNavigate }) {
               <>
                 <p>
                   <strong>Physical:</strong>{" "}
-                  {product.size && `${product.size}"`}{" "}
+                  {product.size && `${getFormattedSize(productId)}`}{" "}
                   {product.shape &&
                     `· ${product.shape.charAt(0).toUpperCase() + product.shape.slice(1)}`}{" "}
                   {product.finish && `· ${product.finish}`}

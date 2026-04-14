@@ -10,26 +10,8 @@ import {
   ReferenceDot,
 } from "recharts";
 import { exportCalculatorPDF } from "../utils/exportPDF";
+import { LAMP_TYPES, calculateROI, fmt$, fmtW, eff } from "../utils/calculator";
 
-/* ─────────────────────────────────────────────
-   Constants
-───────────────────────────────────────────── */
-const TYPES = [
-  { k: "inc", label: "Incandescent", color: "#7F77DD", cls: "inc" },
-  { k: "hal", label: "Halogen", color: "#1D9E75", cls: "hal" },
-  { k: "flu", label: "Fluorescent", color: "#D85A30", cls: "flu" },
-];
-
-/* ─────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────── */
-const eff = (w, l) => (w > 0 ? l / w : 0);
-const fmt$ = (v) => `$${v.toFixed(2)}`;
-const fmtW = (w) => `${w.toFixed(1)} W`;
-
-/* ─────────────────────────────────────────────
-   Main component
-───────────────────────────────────────────── */
 export default function Calculator() {
   /* ── state ── */
   const [mode, setMode] = useState("quantity");
@@ -55,8 +37,8 @@ export default function Calculator() {
     fluorescent: { watts: 30, lumens: 1800 },
   });
   const [led, setLed] = useState({ watts: 10, lumens: 1200 });
-  const [qIn, setQIn] = useState({ qty: 100, oldLm: 800 });
-  const [lIn, setLIn] = useState({ total: 100000, oldLm: 800 });
+  const [qIn, setQIn] = useState({ qty: 100 });
+  const [lIn, setLIn] = useState({ total: 100000 });
 
   /* ── mode switch (with save prompt) ── */
   const handleModeClick = (m) => {
@@ -68,7 +50,14 @@ export default function Calculator() {
   };
 
   const doSwitch = (save) => {
-    if (save) exportCalculatorPDF(results, mode);
+    if (save) {
+      exportCalculatorPDF(results, mode, common, {
+        oldLamp,
+        led,
+        qIn,
+        lIn,
+      });
+    }
     setMode(pendingMode);
     setPending(null);
     setShowModal(false);
@@ -78,95 +67,10 @@ export default function Calculator() {
 
   /* ── calculate ── */
   const calculate = () => {
-    const ledEff = eff(led.watts, led.lumens);
-    let oldQty = {},
-      ledQty = 0,
-      oldTotLm = 0,
-      ledTotLm = 0,
-      oldLmPer = 0;
-
-    if (mode === "quantity") {
-      const q = qIn.qty;
-      oldLmPer = qIn.oldLm;
-      oldTotLm = q * oldLmPer;
-      ledTotLm = q * led.lumens;
-      oldQty = { inc: q, hal: q, flu: q };
-      ledQty = q;
-    } else {
-      const tot = lIn.total;
-      oldLmPer = lIn.oldLm;
-      oldTotLm = tot;
-      ledTotLm = tot;
-      const oq = tot / oldLmPer;
-      oldQty = { inc: oq, hal: oq, flu: oq };
-      ledQty = tot / led.lumens;
-    }
-
-    const typeMap = { inc: "incandescent", hal: "halogen", flu: "fluorescent" };
-
-    const calcSav = (key) => {
-      const ol = oldLamp[typeMap[key]];
-      const oEff = eff(ol.watts, ol.lumens);
-      const oW = oldTotLm / oEff;
-      const lW = ledTotLm / ledEff;
-      const oE = (oW * common.hours * common.days) / 1000;
-      const nE = (lW * common.hours * common.days) / 1000;
-      return (oE - nE) * common.rate;
-    };
-
-    const savings = {
-      inc: calcSav("inc"),
-      hal: calcSav("hal"),
-      flu: calcSav("flu"),
-    };
-    const ledCostTotal =
-      ledQty * common.ledCost -
-      ledQty * common.rebate +
-      common.installation +
-      common.delivery;
-
-    /* chart data */
-    const chart = [];
-    const paybacks = [];
-    for (let m = 0; m <= 60; m++) {
-      const row = { time: m };
-      ["inc", "hal", "flu"].forEach((t) => {
-        row[t] = (m / 12) * savings[t] - ledCostTotal;
-      });
-      chart.push(row);
-      if (m > 0) {
-        ["inc", "hal", "flu"].forEach((t) => {
-          if (row[t] >= 0 && !paybacks.find((p) => p.t === t))
-            paybacks.push({ time: m, val: row[t], t });
-        });
-      }
-    }
-
-    /* power info */
-    const mkPow = (key) => {
-      const ol = oldLamp[typeMap[key]];
-      const oEf = eff(ol.watts, ol.lumens);
-      const per = oldLmPer / oEf;
-      return { per, tot: per * oldQty[key], eff: oEf };
-    };
-    const power = {
-      inc: mkPow("inc"),
-      hal: mkPow("hal"),
-      flu: mkPow("flu"),
-      led: { per: led.watts, tot: led.watts * ledQty, eff: ledEff },
-    };
-
-    setResults({
-      savings,
-      ledCostTotal,
-      ledQty,
-      oldQty,
-      oldTotLm,
-      ledTotLm,
-      chart,
-      paybacks,
-      power,
-    });
+    // Use centralized ROI calculator
+    const inputs = mode === "quantity" ? qIn : lIn;
+    const roiResults = calculateROI(mode, inputs, led, oldLamp, common);
+    setResults(roiResults);
     setHasResults(true);
   };
 
@@ -174,13 +78,6 @@ export default function Calculator() {
   const filteredChart = results
     ? results.chart.filter((d) => d.time <= timeRange)
     : [];
-  const lumPct = results
-    ? (
-        ((results.ledTotLm - results.oldTotLm) / results.oldTotLm) *
-        100
-      ).toFixed(1)
-    : 0;
-
   /* ─────────────────────────────────────────────
      Render
   ───────────────────────────────────────────── */
@@ -320,19 +217,6 @@ export default function Calculator() {
                 }
               />
             </div>
-            <div className="inp-group">
-              <label>Lumens per old fixture</label>
-              <input
-                type="number"
-                value={qIn.oldLm}
-                onChange={(e) =>
-                  setQIn((p) => ({
-                    ...p,
-                    oldLm: parseFloat(e.target.value) || 0,
-                  }))
-                }
-              />
-            </div>
           </div>
         ) : (
           <div
@@ -350,19 +234,6 @@ export default function Calculator() {
                   setLIn((p) => ({
                     ...p,
                     total: parseFloat(e.target.value) || 0,
-                  }))
-                }
-              />
-            </div>
-            <div className="inp-group">
-              <label>Lumens per old fixture</label>
-              <input
-                type="number"
-                value={lIn.oldLm}
-                onChange={(e) =>
-                  setLIn((p) => ({
-                    ...p,
-                    oldLm: parseFloat(e.target.value) || 0,
                   }))
                 }
               />
@@ -406,7 +277,14 @@ export default function Calculator() {
           {hasResults && (
             <button
               className="pdf-btn"
-              onClick={() => exportCalculatorPDF(results, mode)}
+              onClick={() =>
+                exportCalculatorPDF(results, mode, common, {
+                  oldLamp,
+                  led,
+                  qIn,
+                  lIn,
+                })
+              }
             >
               Export PDF
             </button>
@@ -418,7 +296,6 @@ export default function Calculator() {
       {results && (
         <div className="led-card">
           <h2>Results</h2>
-
           {/* summary stat cards */}
           <div className="summary-row">
             <div className="stat-card">
@@ -440,52 +317,23 @@ export default function Calculator() {
               <div className="s-val">{fmtW(results.power.led.tot)}</div>
             </div>
           </div>
-
-          {/* lumen bar */}
-          <div className="lumen-bar">
-            <div className="lb-row">
-              <span style={{ fontSize: 12, color: "#666" }}>
-                Brightness comparison
-              </span>
-              <span
-                style={{
-                  fontSize: 12,
-                  fontFamily: "'DM Mono',monospace",
-                  color:
-                    results.ledTotLm >= results.oldTotLm
-                      ? "#1D9E75"
-                      : "#D85A30",
-                }}
-              >
-                {results.ledTotLm >= results.oldTotLm ? "+" : ""}
-                {lumPct}% vs old
-              </span>
-            </div>
-            <div style={{ fontSize: 11, color: "#aaa", marginBottom: 8 }}>
-              Old: {results.oldTotLm.toFixed(0)} lm &nbsp;·&nbsp; LED:{" "}
-              {results.ledTotLm.toFixed(0)} lm
-            </div>
-            <div className="bar-track">
-              <div
-                className="bar-fill"
-                style={{
-                  width:
-                    Math.min(
-                      100,
-                      (results.ledTotLm /
-                        Math.max(results.oldTotLm, results.ledTotLm)) *
-                        100,
-                    ) + "%",
-                }}
-              />
-            </div>
-          </div>
-
           {/* per-lamp result cards */}
           <div className="lamp-results">
-            {TYPES.map(({ k, label, cls }) => {
+            {LAMP_TYPES.map(({ k, label, cls }) => {
               const pb = results.paybacks.find((p) => p.t === k);
               const net5 = results.savings[k] * 5 - results.ledCostTotal;
+              const oldTypeLumens =
+                results.oldTotLmByType?.[k] ?? results.oldTotLm;
+              const lumensDelta = results.ledTotLm - oldTypeLumens;
+              const lumensDeltaPct =
+                oldTypeLumens > 0
+                  ? ((lumensDelta / oldTypeLumens) * 100).toFixed(1)
+                  : "0.0";
+              const fixtureDelta = results.ledQty - results.oldQty[k];
+              const fixtureDeltaPct =
+                results.oldQty[k] > 0
+                  ? ((fixtureDelta / results.oldQty[k]) * 100).toFixed(1)
+                  : "0.0";
               return (
                 <div className="lr-card" key={k}>
                   <div className={"lr-name " + cls}>{label}</div>
@@ -507,6 +355,27 @@ export default function Calculator() {
                       {results.power[k].eff.toFixed(1)} lm/W
                     </span>
                   </div>
+                  {mode === "quantity" ? (
+                    <div className="lr-row">
+                      <span>Lumens Difference</span>
+                      <span className="lr-v">
+                        {lumensDelta >= 0 ? "+" : ""}
+                        {lumensDelta.toFixed(0)} lm (
+                        {lumensDelta >= 0 ? "+" : ""}
+                        {lumensDeltaPct}%)
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="lr-row">
+                      <span>Fixtures Difference</span>
+                      <span className="lr-v">
+                        {fixtureDelta >= 0 ? "+" : ""}
+                        {fixtureDelta.toFixed(1)} (
+                        {fixtureDelta >= 0 ? "+" : ""}
+                        {fixtureDeltaPct}%)
+                      </span>
+                    </div>
+                  )}
                   <div className="lr-big">
                     <div
                       style={{ fontSize: 11, color: "#aaa", marginBottom: 2 }}
@@ -545,7 +414,6 @@ export default function Calculator() {
               );
             })}
           </div>
-
           {/* chart */}
           <div style={{ marginTop: 20 }}>
             <button
@@ -578,7 +446,7 @@ export default function Calculator() {
                       labelFormatter={(l) => l + " months"}
                     />
                     <Legend iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-                    {TYPES.map(({ k, label, color }) => (
+                    {LAMP_TYPES.map(({ k, label, color }) => (
                       <Line
                         key={k}
                         dataKey={k}

@@ -8,6 +8,7 @@ export default function ProductCard({
   onProductClick,
 }) {
   const getEffectivePrice = useProductStore((state) => state.getEffectivePrice);
+  const getFormattedSize = useProductStore((state) => state.getFormattedSize);
 
   // Map product category to Font Awesome icon
   const getCategoryIcon = (category) => {
@@ -59,6 +60,13 @@ export default function ProductCard({
 
       {/* SKU Section */}
       <div className="product-card-sku">SKU: {product.sku}</div>
+
+      {/* Size Section */}
+      {product.size && (
+        <div className="product-card-size">
+          Size: {getFormattedSize(product.id)}
+        </div>
+      )}
 
       {/* Price Section */}
       <div

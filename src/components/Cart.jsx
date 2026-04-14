@@ -11,22 +11,14 @@ import {
 } from "recharts";
 import { exportCartPDF } from "../utils/exportPDF";
 import useProductStore from "../stores/productStore";
-
-/* ─────────────────────────────────────────────
-   Constants
-───────────────────────────────────────────── */
-const LAMP_TYPES = [
-  { k: "inc", label: "Incandescent", color: "#7F77DD", cls: "inc" },
-  { k: "hal", label: "Halogen", color: "#1D9E75", cls: "hal" },
-  { k: "flu", label: "Fluorescent", color: "#D85A30", cls: "flu" },
-];
-
-/* ─────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────── */
-const eff = (w, l) => (w > 0 ? l / w : 0);
-const fmt$ = (v) => `$${v.toFixed(2)}`;
-const fmtW = (w) => `${w.toFixed(1)} W`;
+import {
+  LAMP_TYPES,
+  calculateLEDFromCart,
+  calculateCartROI,
+  fmt$,
+  fmtW,
+  eff,
+} from "../utils/calculator";
 
 export default function Cart({
   cartItems,
@@ -42,6 +34,8 @@ export default function Cart({
     hours: 24,
     days: 365,
     rate: 0.14,
+    installation: 100,
+    delivery: 40,
   });
 
   const [oldLamp, setOldLamp] = useState({
@@ -51,97 +45,13 @@ export default function Cart({
   });
 
   // Calculate total LED wattage and lumens from cart
-  const calculateLEDData = () => {
-    if (cartItems.length === 0) return { totalWatts: 0, totalLumens: 0 };
-    const total = cartItems.reduce(
-      (acc, item) => ({
-        totalWatts: acc.totalWatts + item.wattage * item.quantity,
-        totalLumens: acc.totalLumens + item.lumens * item.quantity,
-      }),
-      { totalWatts: 0, totalLumens: 0 },
-    );
-    return total;
-  };
-
-  const ledData = calculateLEDData();
-
-  // Calculate cart total with effective pricing
-  const calculateCartTotal = () => {
-    return cartItems.reduce((sum, item) => {
-      const effectivePrice = getEffectivePrice(item.id, item.quantity);
-      return sum + effectivePrice * item.quantity;
-    }, 0);
-  };
-
-  const cartTotal = calculateCartTotal();
+  const ledData = calculateLEDFromCart(cartItems);
 
   const calculate = () => {
     if (cartItems.length === 0) return;
 
-    const ledEff = eff(ledData.totalWatts, ledData.totalLumens);
-    const ledQty = cartItems.length;
-    const currentCartTotal = calculateCartTotal();
-
-    const typeMap = { inc: "incandescent", hal: "halogen", flu: "fluorescent" };
-
-    const calcSav = (key) => {
-      const ol = oldLamp[typeMap[key]];
-      const oEff = eff(ol.watts, ol.lumens);
-      const oW = ledData.totalLumens / oEff;
-      const lW = ledData.totalLumens / ledEff;
-      const oE = (oW * common.hours * common.days) / 1000;
-      const nE = (lW * common.hours * common.days) / 1000;
-      return (oE - nE) * common.rate;
-    };
-
-    const savings = {
-      inc: calcSav("inc"),
-      hal: calcSav("hal"),
-      flu: calcSav("flu"),
-    };
-
-    /* chart data */
-    const chart = [];
-    const paybacks = [];
-    for (let m = 0; m <= 60; m++) {
-      const row = { time: m };
-      ["inc", "hal", "flu"].forEach((t) => {
-        row[t] = (m / 12) * savings[t] - currentCartTotal;
-      });
-      chart.push(row);
-      if (m > 0) {
-        ["inc", "hal", "flu"].forEach((t) => {
-          if (row[t] >= 0 && !paybacks.find((p) => p.t === t))
-            paybacks.push({ time: m, val: row[t], t });
-        });
-      }
-    }
-
-    /* power info */
-    const mkPow = (key) => {
-      const ol = oldLamp[typeMap[key]];
-      const oEf = eff(ol.watts, ol.lumens);
-      const per = ol.lumens / oEf;
-      return { per, eff: oEf };
-    };
-
-    const power = {
-      inc: mkPow("inc"),
-      hal: mkPow("hal"),
-      flu: mkPow("flu"),
-      led: { per: ledData.totalWatts / cartItems.length, eff: ledEff },
-    };
-
-    setResults({
-      savings,
-      cartTotal,
-      ledQty,
-      ledWatts: ledData.totalWatts,
-      ledLumens: ledData.totalLumens,
-      chart,
-      paybacks,
-      power,
-    });
+    // Use centralized ROI calculator
+    setResults(calculateCartROI(cartItems, oldLamp, common, getEffectivePrice));
   };
 
   const filteredChart = results
@@ -280,30 +190,6 @@ export default function Cart({
                 ))}
               </tbody>
             </table>
-
-            <div
-              style={{
-                marginTop: 20,
-                paddingTop: 20,
-                borderTop: "2px solid #eee",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <div style={{ fontSize: 16, fontWeight: 600 }}>
-                Cart Total:{" "}
-                <span style={{ color: "#1d9e75" }}>{fmt$(cartTotal)}</span>
-              </div>
-              <button
-                className="pdf-btn"
-                onClick={() =>
-                  exportCartPDF(cartItems, results, oldLamp, common)
-                }
-              >
-                Export PDF
-              </button>
-            </div>
           </div>
 
           {/* LED Data Summary */}
@@ -327,6 +213,69 @@ export default function Cart({
               <div className="stat-card">
                 <div className="s-label">Items Count</div>
                 <div className="s-val">{cartItems.length}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Calculation Parameters */}
+          <div className="led-card">
+            <h2>Calculation Parameters</h2>
+            <div className="params-grid">
+              <div className="inp-group">
+                <label>Hours per day</label>
+                <input
+                  type="number"
+                  value={common.hours}
+                  onChange={(e) =>
+                    setCommon({ ...common, hours: parseFloat(e.target.value) })
+                  }
+                />
+              </div>
+              <div className="inp-group">
+                <label>Days per year</label>
+                <input
+                  type="number"
+                  value={common.days}
+                  onChange={(e) =>
+                    setCommon({ ...common, days: parseFloat(e.target.value) })
+                  }
+                />
+              </div>
+              <div className="inp-group">
+                <label>Electricity ($/kWh)</label>
+                <input
+                  type="number"
+                  value={common.rate}
+                  onChange={(e) =>
+                    setCommon({ ...common, rate: parseFloat(e.target.value) })
+                  }
+                />
+              </div>
+              <div className="inp-group">
+                <label>Installation ($)</label>
+                <input
+                  type="number"
+                  value={common.installation}
+                  onChange={(e) =>
+                    setCommon({
+                      ...common,
+                      installation: parseFloat(e.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className="inp-group">
+                <label>Delivery ($)</label>
+                <input
+                  type="number"
+                  value={common.delivery}
+                  onChange={(e) =>
+                    setCommon({
+                      ...common,
+                      delivery: parseFloat(e.target.value),
+                    })
+                  }
+                />
               </div>
             </div>
           </div>
@@ -381,36 +330,34 @@ export default function Cart({
               ))}
             </div>
 
-            <h2 style={{ marginTop: 20 }}>Usage &amp; Energy Parameters</h2>
-            <div className="params-grid">
-              {[
-                ["hours", "Hours / day"],
-                ["days", "Days / year"],
-                ["rate", "Electricity ($/kWh)"],
-              ].map(([k, l]) => (
-                <div className="inp-group" key={k}>
-                  <label>{l}</label>
-                  <input
-                    type="number"
-                    value={common[k]}
-                    onChange={(e) =>
-                      setCommon((p) => ({
-                        ...p,
-                        [k]: parseFloat(e.target.value) || 0,
-                      }))
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-
-            <button
-              className="calc-btn"
-              onClick={calculate}
-              style={{ marginTop: 16 }}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginTop: 16,
+              }}
             >
-              Calculate Savings
-            </button>
+              <button className="calc-btn" onClick={calculate}>
+                Calculate Savings
+              </button>
+              {results && (
+                <button
+                  className="pdf-btn"
+                  onClick={() =>
+                    exportCartPDF(
+                      cartItems,
+                      results,
+                      oldLamp,
+                      common,
+                      getEffectivePrice,
+                    )
+                  }
+                >
+                  Export PDF
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Results */}

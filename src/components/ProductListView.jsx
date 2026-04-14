@@ -8,6 +8,7 @@ export default function ProductListView({
   onProductClick,
 }) {
   const getEffectivePrice = useProductStore((state) => state.getEffectivePrice);
+  const getFormattedSize = useProductStore((state) => state.getFormattedSize);
 
   // Map product category to Font Awesome icon
   const getCategoryIcon = (category) => {
@@ -62,6 +63,7 @@ export default function ProductListView({
           <span
             className={`product-list-specs ${isBulkPrice ? "bulk-active" : ""}`}
           >
+            {product.size && `${getFormattedSize(product.id)} · `}
             {Math.min(...product.wattageOptions)}W ·{" "}
             {Math.min(...product.lumensOptions)}lm · $
             {effectivePrice.toFixed(2)}
