@@ -3,8 +3,7 @@ export default function Banner() {
     <div
       style={{
         height: "300px",
-        backgroundImage:
-          "url('./public/images/istockphoto-2082343791-1024x1024.webp')",
+        backgroundImage: "url('./public/images/banner.png')",
         backgroundSize: "cover",
         color: "#fff",
         display: "flex",
