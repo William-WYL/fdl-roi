@@ -78,6 +78,73 @@ export default function Calculator() {
   const filteredChart = results
     ? results.chart.filter((d) => d.time <= timeRange)
     : [];
+  const quantityLumenDiff =
+    results && mode === "quantity"
+      ? (() => {
+          const oldRows = LAMP_TYPES.map(({ k, label, color }) => {
+            const oldTypeLumens =
+              results.oldTotLmByType?.[k] ?? results.oldTotLm;
+            const delta = results.ledTotLm - oldTypeLumens;
+            const deltaPct =
+              oldTypeLumens > 0 ? (delta / oldTypeLumens) * 100 : 0;
+            return {
+              k,
+              label,
+              color,
+              isLed: false,
+              baseLumens: oldTypeLumens,
+              delta,
+              deltaPct,
+            };
+          });
+
+          const maxLumens = Math.max(
+            results.ledTotLm,
+            ...oldRows.map((row) => row.baseLumens),
+            1,
+          );
+
+          return [
+            {
+              k: "led",
+              label: "LED",
+              color: "#0F6E56",
+              isLed: true,
+              baseLumens: results.ledTotLm,
+              delta: 0,
+              deltaPct: 0,
+              barPct: (results.ledTotLm / maxLumens) * 100,
+            },
+            ...oldRows.map((row) => ({
+              ...row,
+              barPct: (row.baseLumens / maxLumens) * 100,
+            })),
+          ];
+        })()
+      : [];
+  const electricityCostData = results
+    ? [
+        {
+          k: "led",
+          label: "LED",
+          color: "#0F6E56",
+          annualCost:
+            ((results.power.led.tot * common.hours * common.days) / 1000) *
+            common.rate,
+        },
+        ...LAMP_TYPES.map(({ k, label, color }) => ({
+          k,
+          label,
+          color,
+          annualCost:
+            ((results.power[k].tot * common.hours * common.days) / 1000) *
+            common.rate,
+        })),
+      ]
+    : [];
+  const maxElectricityCost = electricityCostData.length
+    ? Math.max(...electricityCostData.map((d) => d.annualCost), 1)
+    : 1;
   /* ─────────────────────────────────────────────
      Render
   ───────────────────────────────────────────── */
@@ -317,6 +384,67 @@ export default function Calculator() {
               <div className="s-val">{fmtW(results.power.led.tot)}</div>
             </div>
           </div>
+          {mode === "quantity" && quantityLumenDiff.length > 0 && (
+            <div className="lumens-diff-chart">
+              <div className="ldc-title">Lumen Difference by Baseline Type</div>
+              {quantityLumenDiff.map((row) => {
+                const isPositive = row.delta >= 0;
+                return (
+                  <div className="ldc-row" key={row.k}>
+                    <div className="ldc-label">{row.label}</div>
+                    <div className="ldc-track-wrap">
+                      <div className="ldc-track">
+                        <div
+                          className={"ldc-fill" + (isPositive ? "" : " neg")}
+                          style={{
+                            width: `${row.barPct}%`,
+                            backgroundColor:
+                              row.isLed || isPositive ? row.color : "#D85A30",
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {row.isLed ? (
+                      <div className="ldc-value">
+                        {row.baseLumens.toFixed(0)} lm
+                      </div>
+                    ) : (
+                      <div className={"ldc-value" + (isPositive ? "" : " neg")}>
+                        {isPositive ? "+" : ""}
+                        {row.delta.toFixed(0)} lm ({isPositive ? "+" : ""}
+                        {row.deltaPct.toFixed(1)}%)
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {electricityCostData.length > 0 && (
+            <div className="cost-bar-chart">
+              <div className="cbc-title">
+                Annual Electricity Cost Comparison
+              </div>
+              {electricityCostData.map((row) => {
+                const width = (row.annualCost / maxElectricityCost) * 100;
+                return (
+                  <div className="cbc-row" key={row.k}>
+                    <div className="cbc-label">{row.label}</div>
+                    <div className="cbc-track">
+                      <div
+                        className="cbc-fill"
+                        style={{
+                          width: `${width}%`,
+                          backgroundColor: row.color,
+                        }}
+                      />
+                    </div>
+                    <div className="cbc-value">{fmt$(row.annualCost)} / yr</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {/* per-lamp result cards */}
           <div className="lamp-results">
             {LAMP_TYPES.map(({ k, label, cls }) => {

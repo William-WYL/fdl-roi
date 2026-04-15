@@ -57,6 +57,34 @@ export default function Cart({
   const filteredChart = results
     ? results.chart.filter((d) => d.time <= timeRange)
     : [];
+  const cartSubtotal = cartItems.reduce(
+    (sum, item) =>
+      sum + getEffectivePrice(item.id, item.quantity) * item.quantity,
+    0,
+  );
+  const electricityCostData = results
+    ? [
+        {
+          k: "led",
+          label: "LED",
+          color: "#0F6E56",
+          annualCost:
+            ((results.power.led.tot * common.hours * common.days) / 1000) *
+            common.rate,
+        },
+        ...LAMP_TYPES.map(({ k, label, color }) => ({
+          k,
+          label,
+          color,
+          annualCost:
+            ((results.power[k].tot * common.hours * common.days) / 1000) *
+            common.rate,
+        })),
+      ]
+    : [];
+  const maxElectricityCost = electricityCostData.length
+    ? Math.max(...electricityCostData.map((d) => d.annualCost), 1)
+    : 1;
 
   return (
     <div className="page-container">
@@ -190,6 +218,19 @@ export default function Cart({
                 ))}
               </tbody>
             </table>
+            <div
+              style={{
+                marginTop: 12,
+                marginRight: 14,
+                textAlign: "right",
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#000000",
+                fontFamily: "DM Mono, monospace",
+              }}
+            >
+              Total: <span>{fmt$(cartSubtotal)}</span>
+            </div>
           </div>
 
           {/* LED Data Summary */}
@@ -211,7 +252,7 @@ export default function Cart({
                 </div>
               </div>
               <div className="stat-card">
-                <div className="s-label">Items Count</div>
+                <div className="s-label">Categories Count</div>
                 <div className="s-val">{cartItems.length}</div>
               </div>
             </div>
@@ -397,6 +438,34 @@ export default function Cart({
                   <div className="s-val">{fmt$(results.savings.inc)}</div>
                 </div>
               </div>
+
+              {electricityCostData.length > 0 && (
+                <div className="cost-bar-chart">
+                  <div className="cbc-title">
+                    Annual Electricity Cost Comparison
+                  </div>
+                  {electricityCostData.map((row) => {
+                    const width = (row.annualCost / maxElectricityCost) * 100;
+                    return (
+                      <div className="cbc-row" key={row.k}>
+                        <div className="cbc-label">{row.label}</div>
+                        <div className="cbc-track">
+                          <div
+                            className="cbc-fill"
+                            style={{
+                              width: `${width}%`,
+                              backgroundColor: row.color,
+                            }}
+                          />
+                        </div>
+                        <div className="cbc-value">
+                          {fmt$(row.annualCost)} / yr
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* per-lamp result cards */}
               <div className="lamp-results">

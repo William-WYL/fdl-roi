@@ -484,6 +484,39 @@ export function exportCalculatorPDF(results, mode, common, details = {}) {
     </tr>`;
   }).join("");
 
+  const lumenDiffBarData = LAMP_TYPES.map(({ k, label, color }) => {
+    const oldTypeLumens = r.oldTotLmByType?.[k] ?? r.oldTotLm;
+    const delta = r.ledTotLm - oldTypeLumens;
+    const deltaPct = oldTypeLumens > 0 ? (delta / oldTypeLumens) * 100 : 0;
+    return {
+      label,
+      color,
+      delta,
+      deltaPct,
+    };
+  });
+
+  const maxAbsLumenDiff = Math.max(
+    ...lumenDiffBarData.map((row) => Math.abs(row.delta)),
+    1,
+  );
+
+  const lumensDiffBarRows = lumenDiffBarData
+    .map((row) => {
+      const isPositive = row.delta >= 0;
+      const width = (Math.abs(row.delta) / maxAbsLumenDiff) * 100;
+      return `<div style="display:grid;grid-template-columns:120px 1fr 190px;gap:10px;align-items:center;margin:0 0 8px 0">
+        <div style="font-size:12px;color:#555">${row.label}</div>
+        <div style="height:10px;border-radius:999px;background:#e5e9f0;overflow:hidden">
+          <div style="height:100%;width:${width}%;border-radius:999px;background:${isPositive ? row.color : "#D85A30"}"></div>
+        </div>
+        <div style="font-size:12px;text-align:right;font-family:Consolas,monospace;color:${isPositive ? "#1D9E75" : "#D85A30"}">
+          ${isPositive ? "+" : ""}${row.delta.toFixed(0)} lm (${isPositive ? "+" : ""}${row.deltaPct.toFixed(2)}%)
+        </div>
+      </div>`;
+    })
+    .join("");
+
   const fixtureComparisonRows = LAMP_TYPES.map(({ k, label }) => {
     const oldFixtures = r.oldQty[k];
     const delta = r.ledQty - oldFixtures;
@@ -528,6 +561,8 @@ export function exportCalculatorPDF(results, mode, common, details = {}) {
   .print-btn{background:#1a1a2e;color:#e8d5a3;border:none;padding:10px 22px;border-radius:7px;
              font-size:13px;cursor:pointer;margin-bottom:20px}
   .detail-card{margin:0 0 16px 0;padding:14px;background:#f8fafc;border-radius:8px;border-left:4px solid #1D9E75}
+  .hbar-card{margin-top:12px;border:1px solid #e6e9ee;border-radius:8px;background:#f8fafc;padding:12px}
+  .hbar-title{font-size:12px;color:#666;text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin:0 0 10px 0}
   @media print{.print-btn{display:none}}
 </style></head><body>
 <h1>LED ROI Calculator — Report</h1>
@@ -580,6 +615,10 @@ export function exportCalculatorPDF(results, mode, common, details = {}) {
       <thead><tr><th>Baseline Type</th><th>Old Total Lumens</th><th>LED Total Lumens</th><th>Lumens Difference (LED - Old)</th><th>Difference (%)</th></tr></thead>
       <tbody>${lumensComparisonRows}</tbody>
     </table>
+  </div>
+  <div class="hbar-card">
+    <div class="hbar-title">Lumen Difference by Baseline Type</div>
+    ${lumensDiffBarRows}
   </div>`
       : `<div class="table-wrap" style="margin-top:12px">
     <table>

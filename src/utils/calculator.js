@@ -35,7 +35,7 @@ export const calculateSavings = (
   common,
 ) => {
   const oldEff = eff(oldLamp.watts, oldLamp.lumens);
-  const ledEff = eff(ledWatts, totalLumens);
+  if (!Number.isFinite(oldEff) || oldEff <= 0) return 0;
 
   // Calculate old lamp wattage needed for same lumens
   const oldWattsNeeded = totalLumens / oldEff;
@@ -59,6 +59,13 @@ export const calculateSavings = (
  */
 export const getPowerInfo = (lampType, oldLamp, lumensPerUnit, quantity) => {
   const oldEff = eff(oldLamp.watts, oldLamp.lumens);
+  if (!Number.isFinite(oldEff) || oldEff <= 0) {
+    return {
+      per: 0,
+      tot: 0,
+      eff: 0,
+    };
+  }
   const wattsPerLamp = lumensPerUnit / oldEff;
   const totalWatts = wattsPerLamp * quantity;
 
@@ -191,10 +198,12 @@ export const calculateROI = (mode, inputs, led, oldLampSpecs, common) => {
   // Calculate savings for each lamp type
   const savings = {};
   ["inc", "hal", "flu"].forEach((t) => {
+    const comparisonLumens =
+      mode === "quantity" ? qty.oldTotLmByType[t] : qty.ledTotLm;
     savings[t] = calculateSavings(
       t,
       oldLampSpecs[typeMap[t]],
-      qty.ledTotLm,
+      comparisonLumens,
       qty.ledQty * led.watts,
       common,
     );
@@ -213,12 +222,16 @@ export const calculateROI = (mode, inputs, led, oldLampSpecs, common) => {
   // Calculate power information
   const power = {};
   ["inc", "hal", "flu"].forEach((t) => {
-    power[t] = getPowerInfo(
-      t,
-      oldLampSpecs[typeMap[t]],
-      oldLampSpecs[typeMap[t]].lumens,
-      qty.oldQty[t],
-    );
+    const oldSpec = oldLampSpecs[typeMap[t]];
+    const oldEff = eff(oldSpec.watts, oldSpec.lumens);
+    const comparisonLumens =
+      mode === "quantity" ? qty.oldTotLmByType[t] : qty.ledTotLm;
+    const totalWatts = oldEff > 0 ? comparisonLumens / oldEff : 0;
+    power[t] = {
+      per: qty.oldQty[t] > 0 ? totalWatts / qty.oldQty[t] : 0,
+      tot: totalWatts,
+      eff: oldEff,
+    };
   });
   power.led = {
     per: led.watts,
@@ -287,16 +300,20 @@ export const calculateCartROI = (
 
   // Calculate power comparison
   const power = {};
+  const totalFixtures = cartItems.reduce((s, i) => s + i.quantity, 0);
   ["inc", "hal", "flu"].forEach((t) => {
-    power[t] = getPowerInfo(
-      t,
-      oldLampSpecs[typeMap[t]],
-      ledData.totalLumens / ledData.totalWatts,
-      cartItems.reduce((s, i) => s + i.quantity, 0),
-    );
+    const oldSpec = oldLampSpecs[typeMap[t]];
+    const oldEff = eff(oldSpec.watts, oldSpec.lumens);
+    const totalWatts = oldEff > 0 ? ledData.totalLumens / oldEff : 0;
+    power[t] = {
+      per: totalFixtures > 0 ? totalWatts / totalFixtures : 0,
+      tot: totalWatts,
+      eff: oldEff,
+    };
   });
   power.led = {
-    per: ledData.totalWatts / cartItems.reduce((s, i) => s + i.quantity, 0),
+    per: totalFixtures > 0 ? ledData.totalWatts / totalFixtures : 0,
+    tot: ledData.totalWatts,
     eff: ledEff,
   };
 
